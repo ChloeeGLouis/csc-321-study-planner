@@ -1,0 +1,125 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership security model. All data is considered private and
+ * can only be accessed by the authenticated user who created it. There is no concept of public data or shared access
+ * in this model. The default security posture is to deny all access unless explicitly granted to the document owner.
+ *
+ * Data Structure: The data is organized hierarchically under a top-level `users` collection. Each user's profile
+ * and related subcollections (like `studySessions`) are nested under their unique user ID (`/users/{userId}`). This
+ * path-based structure simplifies ownership rules, as access to any document within a user's data tree can be
+ * controlled by checking if the requester's ID matches the `userId` in the path.
+ *
+ * Key Security Decisions:
+ * - User Isolation: Users are completely isolated from one another. They cannot read, write, or even discover the
+ *   existence of other users' data.
+ * - No User Listing: Listing the top-level `/users` collection is explicitly disallowed to prevent user enumeration
+ *   and protect user privacy.
+ * - Path-Based Authorization: All authorization decisions are derived from the `{userId}` wildcard in the document
+ *   path, ensuring that rules are simple, fast, and secure.
+ * - Relational Integrity: On document creation, a key field (e.g., `userId`) must be set in the document body to match
+ *   the `userId` from the path. This field is enforced as immutable on updates to prevent documents from being moved
+ *   between users.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently signed-in user's ID matches the provided userId.
+     * This is the core function for enforcing user ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Combines an ownership check with an existence check for the document.
+     * This must be used for all update and delete operations to prevent modifying
+     * or deleting documents that do not exist.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && exists(resource.data);
+    }
+
+    /**
+     * Validates that the user document being created has an 'id' field
+     * that matches the user's own auth UID. This enforces relational
+     * integrity between the path and the document data.
+     */
+    function isCreatingOwnValidUserDoc(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Validates that the 'id' field of a user document is immutable on update.
+     * Prevents re-assigning the document's core identifier.
+     */
+    function isUpdatingOwnValidUserDoc() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates that a new StudySession document contains a `userId` field
+     * matching the owner's UID from the path. This ensures data consistency.
+     */
+    function isCreatingValidStudySession(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Enforces that the `userId` field within a StudySession document is
+     * immutable on update, preventing it from being reassigned to another user.
+     */
+    function isUpdatingValidStudySession() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Controls access to a user's own profile document.
+     * @path /users/{userId}
+     * @allow (get) An authenticated user reads their own profile: `auth.uid == 'user_abc'`, path is `/users/user_abc`.
+     * @allow (create) A new user signs up and creates their profile document: `auth.uid == 'user_xyz'`, path is `/users/user_xyz`.
+     * @deny (list) A user attempts to list all user profiles in the app.
+     * @deny (get) A user tries to read another user's profile: `auth.uid == 'user_123'`, path is `/users/user_456`.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isCreatingOwnValidUserDoc(userId);
+      allow update: if isExistingOwner(userId) && isUpdatingOwnValidUserDoc();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to the study sessions owned by a specific user.
+     * @path /users/{userId}/studySessions/{studySessionId}
+     * @allow (create) An authenticated user creates a new study session for themselves: `auth.uid == 'user_abc'`, path is `/users/user_abc/studySessions/session_1`.
+     * @allow (list) An authenticated user fetches all of their own study sessions: `auth.uid == 'user_abc'`, path is `/users/user_abc/studySessions`.
+     * @deny (get) A user tries to read another user's session: `auth.uid == 'user_123'`, path is `/users/user_456/studySessions/session_x`.
+     * @deny (create) A user tries to create a session under another user's profile: `auth.uid == 'user_123'`, path is `/users/user_456/studySessions/session_y`.
+     * @principle Enforces strict data ownership within a user's private subcollection.
+     */
+    match /users/{userId}/studySessions/{studySessionId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isCreatingValidStudySession(userId);
+      allow update: if isExistingOwner(userId) && isUpdatingValidStudySession();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

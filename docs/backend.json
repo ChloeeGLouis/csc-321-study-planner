@@ -1,0 +1,126 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the StudyAI application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "email"
+      ]
+    },
+    "StudySession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StudySession",
+      "type": "object",
+      "description": "Represents a single study session planned by the user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the study session entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N StudySession)"
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject being studied in this session."
+        },
+        "deadline": {
+          "type": "string",
+          "description": "The deadline for the exam.  Should conform to ISO 8601 date format.",
+          "format": "date-time"
+        },
+        "studySchedule": {
+          "type": "string",
+          "description": "The generated study schedule as provided by the Gemini AI."
+        },
+        "sections": {
+          "type": "array",
+          "description": "Array of sections the user wishes to study.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "studyMethods": {
+          "type": "array",
+          "description": "Array of study methods the user wishes to use.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "aiTips": {
+          "type": "string",
+          "description": "Personalized study tips and strategies powered by Gemini."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "subject",
+        "deadline",
+        "studySchedule"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information.  Path-based ownership: only the user can read/write their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/studySessions/{studySessionId}",
+        "definition": {
+          "entityName": "StudySession",
+          "schema": {
+            "$ref": "#/backend/entities/StudySession"
+          },
+          "description": "Stores study sessions for a specific user. Path-based ownership: only the user can read/write their own study sessions.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "studySessionId",
+              "description": "The unique identifier of the study session."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to be secure, scalable, and easily debuggable, adhering to the core design principles and strategy mandates. It leverages path-based ownership for user data and avoids hierarchical authorization dependencies by storing authorization data directly within the documents requiring authorization. Each path is clearly defined with semantic naming conventions to enhance debuggability. The structure ensures the QAPs (Rules are not Filters) principle by enforcing strict security rules on all list operations."
+  }
+}
