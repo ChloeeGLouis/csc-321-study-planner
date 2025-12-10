@@ -64,7 +64,12 @@ const provideAiStudyTipsFlow = ai.defineFlow(
       }
     }
 
-    const {output} = await studyTipsPrompt({...input, definition});
-    return output!;
+    const result = await studyTipsPrompt({...input, definition});
+    const output = result.output;
+    if (!output) {
+      console.error('AI failed to generate study tips. Result:', JSON.stringify(result, null, 2));
+      throw new Error('AI failed to generate study tips.');
+    }
+    return output;
   }
 );

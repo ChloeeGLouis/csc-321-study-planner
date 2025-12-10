@@ -1,8 +1,7 @@
 export const firebaseConfig = {
-  "projectId": "studio-8982047285-b0b57",
-  "appId": "1:150376772510:web:172009aa36fcde4d009c8f",
-  "apiKey": "AIzaSyDvPmQsQ4kQrWJGSAVsQkDm40DTbTxW5Po",
-  "authDomain": "studio-8982047285-b0b57.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "150376772510"
+  apiKey: "AIzaSyDoSFJmLo30Qeje4Kk7sYxzAwO0Ok9wk-Y",
+  authDomain: "csc-321-study-planner.firebaseapp.com",
+  projectId: "csc-321-study-planner",
+  messagingSenderId: "187215519802",
+  appId: "1:187215519802:web:2379c8a48637faa8b29503",
 };

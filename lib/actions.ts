@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { generateStudySchedule } from '@/ai/flows/generate-study-schedule';
 import { provideAiStudyTips } from '@/ai/flows/provide-ai-study-tips';
 
-// Define the shape of the form data for re-use in the client
 const formDataSchema = z.object({
     subject: z.string().min(1, 'Subject is required.'),
     deadline: z.string().min(1, 'Deadline is required.'),
@@ -15,23 +14,21 @@ const formDataSchema = z.object({
     userId: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formDataSchema>;
+type StudyPlanFormData = z.infer<typeof formDataSchema>;
 
 export type FormState = {
   message: string;
   isError: boolean;
   studySchedule?: string;
   studyTips?: string;
-  formData?: FormData;
+  formData?: StudyPlanFormData;
 };
 
-
 export async function createStudyPlan(prevState: FormState, formData: FormData): Promise<FormState> {
-  
   const parsedFormData = formDataSchema.safeParse({
     subject: formData.get('subject'),
     deadline: formData.get('deadline'),
-    sections: formData.getAll('sections'), 
+    sections: formData.getAll('sections'),
     studyMethods: formData.getAll('studyMethods'),
     frequency: formData.get('frequency'),
     duration: formData.get('duration'),
@@ -47,7 +44,7 @@ export async function createStudyPlan(prevState: FormState, formData: FormData):
   }
 
   const { subject, deadline, sections, studyMethods, frequency, duration, userId } = parsedFormData.data;
-  
+
   if (!userId) {
     return {
         message: 'You must be logged in to create a study plan.',
@@ -74,7 +71,7 @@ export async function createStudyPlan(prevState: FormState, formData: FormData):
         studyMethods: studyMethods.join(', '),
       }),
     ]);
-    
+
     // Return the data to the client to handle saving
     return {
       message: 'Successfully generated study plan!',

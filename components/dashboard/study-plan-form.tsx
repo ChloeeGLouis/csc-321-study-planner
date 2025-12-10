@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const studyMethodsOptions = ["Practice Quizzes", "Reading Sections", "Flashcards", "Mind Mapping", "Group Study", "Videos"];
 
 type StudyPlanFormProps = {
-  formAction: (payload: FormData) => void;
+  formAction: (payload: any) => void;
   userId: string | undefined;
   isPending: boolean;
 };
