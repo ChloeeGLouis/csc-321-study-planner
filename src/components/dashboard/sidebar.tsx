@@ -12,11 +12,11 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Icons } from "@/components/icons";
-import { BookCopy, Home, Settings, LogOut } from "lucide-react";
+import { Home, Settings, LogOut, History } from "lucide-react";
 
 const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
-    { href: "/dashboard/my-plans", label: "My Plans", icon: BookCopy },
+    { href: "/dashboard/history", label: "History", icon: History },
 ];
 
 export function DashboardSidebar() {

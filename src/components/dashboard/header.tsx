@@ -1,3 +1,4 @@
+
 'use client';
 import {
   DropdownMenu,
@@ -12,9 +13,12 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUser } from "@/firebase";
+import { logout } from "@/lib/actions";
 
 export function DashboardHeader() {
   const isMobile = useIsMobile();
+  const { user } = useUser();
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
@@ -26,18 +30,17 @@ export function DashboardHeader() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9">
-                        <AvatarImage data-ai-hint="person portrait" src="https://picsum.photos/seed/user-avatar/100/100" alt="User Avatar" />
-                        <AvatarFallback>U</AvatarFallback>
+                        <AvatarImage data-ai-hint="person portrait" src={user?.photoURL ?? "https://picsum.photos/seed/user-avatar/100/100"} alt="User Avatar" />
+                        <AvatarFallback>{user?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
                     </Avatar>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{user?.email ?? 'My Account'}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link href="#">Profile</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link href="/">Logout</Link></DropdownMenuItem>
+                <DropdownMenuItem onClick={() => logout()}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     </header>

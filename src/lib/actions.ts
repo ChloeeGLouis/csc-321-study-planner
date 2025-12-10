@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { generateStudySchedule } from '@/ai/flows/generate-study-schedule';
 import { provideAiStudyTips } from '@/ai/flows/provide-ai-study-tips';
+import { getAuth, signOut } from 'firebase/auth';
 
 // Define the shape of the form data for re-use in the client
 const formDataSchema = z.object({
@@ -94,4 +95,14 @@ export async function createStudyPlan(prevState: FormState, formData: FormData):
       isError: true,
     };
   }
+}
+
+export async function logout() {
+    try {
+        const auth = getAuth();
+        await signOut(auth);
+    } catch (error) {
+        console.error('Error signing out:', error);
+        // Handle the error as needed
+    }
 }

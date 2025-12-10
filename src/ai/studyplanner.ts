@@ -49,14 +49,28 @@ notes: string;
 export type StudyInteraction = {
 id: string;
 prompt: string;
-response: GeminiStudyPlan;
+response: GeminiStudyPlan & { dictionaryDefinition?: any };
 createdAt: Date | null;
 };
+
+async function getDictionaryDefinition(word: string): Promise<any> {
+  try {
+    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+    if (!response.ok) {
+      return { error: `Could not find definition for ${word}` };
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching dictionary definition:', error);
+    return { error: 'An error occurred while fetching the definition.' };
+  }
+}
 
 export async function callGemini(promptData: {
   input: string;
   extra?: Record<string, unknown>;
-}): Promise<GeminiStudyPlan> {
+}): Promise<GeminiStudyPlan & { dictionaryDefinition?: any }> {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("User must be signed in before calling Gemini");
@@ -64,11 +78,7 @@ export async function callGemini(promptData: {
 
   const userPrompt = promptData.input;
 
-  const fullPrompt = `${SYSTEM_PROMPT}
-
-User input:
-${userPrompt}
-`;
+  const fullPrompt = `${SYSTEM_PROMPT}\n\nUser input:\n${userPrompt}\n`;
 
   const result = await geminiModel.generateContent(fullPrompt);
   const text = result.response?.text() ?? "";
@@ -85,17 +95,31 @@ ${userPrompt}
     };
   }
 
+  // Get dictionary definition for the first word of the plan summary
+  let dictionaryDefinition;
+  if (parsed.planSummary) {
+    const firstWord = parsed.planSummary.split(' ')[0].replace(/[^a-zA-Z]/g, '');
+    if (firstWord) {
+      dictionaryDefinition = await getDictionaryDefinition(firstWord);
+    }
+  }
+
+  const responseWithDefinition = {
+    ...parsed,
+    dictionaryDefinition,
+  };
+
   await addDoc(collection(db, "aiInteractions"), {
     userId: user.uid,
     prompt: userPrompt,
     promptMeta: promptData.extra ?? null,
-    response: parsed,
+    response: responseWithDefinition, // Save the combined response
     rawResponseText: text,
     model: "gemini-2.0-flash",
     createdAt: serverTimestamp(),
   });
 
-  return parsed;
+  return responseWithDefinition;
 }
 
 export async function getHistory(limitCount = 10): Promise<StudyInteraction[]> {
@@ -118,7 +142,7 @@ export async function getHistory(limitCount = 10): Promise<StudyInteraction[]> {
     return {
       id: doc.id,
       prompt: data.prompt,
-      response: data.response as GeminiStudyPlan,
+      response: data.response as GeminiStudyPlan & { dictionaryDefinition?: any },
       createdAt: data.createdAt?.toDate?.() ?? null,
     };
   });
