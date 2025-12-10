@@ -1,0 +1,34 @@
+                ┌─────────────────────────┐
+                │        Frontend         │
+                │  - Auth Page            │
+                │  - History Page         │
+                │  - AI Planner Page      │
+                └───────────┬────────────┘
+                            │
+                            │  User actions
+                            ▼
+                ┌─────────────────────────┐
+                │         Backend         │
+                │  - API endpoints        │
+                │  - Handles requests     │
+                │  - Connects to AI       │
+                └───────┬────────┬───────┘
+                        │        │
+                        │        │
+            Writes/Reads│        │Sends prompts/
+                        ▼        ▼Receives responses
+           ┌─────────────────────────┐
+           │        Firestore        │
+           │  - User accounts        │
+           │  - History storage      │
+           └─────────────────────────┘
+
+                        ▲
+                        │
+                        │ AI requests
+                        │
+           ┌─────────────────────────┐
+           │         Gemini          │
+           │   - Generates study     │
+           │     plans & answers     │
+           └─────────────────────────┘
